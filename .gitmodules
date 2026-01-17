@@ -1,0 +1,3 @@
+[submodule "melanoma_classifier"]
+	path = melanoma_classifier
+	url = https://github.com/mikesaint-antoine/Comp_Bio_Tutorials.git

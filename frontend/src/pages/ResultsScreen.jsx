@@ -10,10 +10,34 @@ export default function ResultsScreen({ data }) {
   const meshRef = useRef(null);
   const autoRotateRef = useRef(true);
 
-  // Sample data - will be replaced with actual backend data
+  // Use backend data or sample data
   const analysisData = data || {
     totalObjectsAnalyzed: 24,
-    concerningSpots: 3
+    concerningSpots: 3,
+    meshData: null
+  };
+
+  // Function to create mesh from backend data
+  const createMeshFromData = (meshData) => {
+    if (!meshData || !meshData.vertices || !meshData.faces) {
+      // Return default geometry if no mesh data
+      return new THREE.IcosahedronGeometry(1.5, 4);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    
+    // Convert vertices to Float32Array
+    const vertices = new Float32Array(meshData.vertices.flat());
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    
+    // Convert faces to indices
+    const indices = new Uint32Array(meshData.faces.flat());
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    
+    // Compute normals for proper lighting
+    geometry.computeVertexNormals();
+    
+    return geometry;
   };
 
   useEffect(() => {
@@ -41,12 +65,13 @@ export default function ResultsScreen({ data }) {
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Create a sample 3D object (sphere with bumpy texture)
-    const geometry = new THREE.IcosahedronGeometry(1.5, 4);
+    // Create 3D object from backend mesh data or use sample geometry
+    const geometry = createMeshFromData(analysisData.meshData);
     const material = new THREE.MeshPhongMaterial({
       color: 0xff6b9d,
       emissive: 0x2a0845,
-      shininess: 100
+      shininess: 100,
+      wireframe: false
     });
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);

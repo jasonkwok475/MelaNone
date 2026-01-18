@@ -81,12 +81,13 @@ class DeviceManager:
         """
         return self.frame
 
-with DeviceManager(DeviceManager.DEFAULT_CAMERA) as device_manager:
-    while True:
-        device_manager.run()
-        # Wait for a key press (1ms delay in the loop)
-        k = cv2.waitKey(1)
-        if k % 256 == 27:
-            # ESC pressed
-            print("Escape hit, closing...")
-            break
+if __name__ == "__main__":
+    with DeviceManager(DeviceManager.DEFAULT_CAMERA) as device_manager:
+        while True:
+            device_manager.run()
+            # Wait for a key press (1ms delay in the loop)
+            k = cv2.waitKey(1)
+            if k % 256 == 27:
+                # ESC pressed
+                print("Escape hit, closing...")
+                break

@@ -1,16 +1,23 @@
 import os
+import sys
 import torch
+
+# Add parent directories to Python path to find melanoma_classifier
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(BACKEND_DIR)
+sys.path.insert(0, ROOT_DIR)
 
 from melanoma_classifier.melanoma_image_classifier.net_class import Net
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), '../melanoma_classifier/melanoma_image_classifier/saved_model.pth')
+MODEL_PATH = os.path.join(ROOT_DIR, 'melanoma_classifier/melanoma_image_classifier/saved_model.pth')
 
 def load_model():
     model = Net()
-    model_path = os.path.join(os.path.dirname(__file__), MODEL_PATH)
-    model.load_state_dict(torch.load(model_path, weights_only=True))
+    if os.path.exists(MODEL_PATH):
+        model.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
+    else:
+        print(f"Warning: Model file not found at {MODEL_PATH}. Using untrained model.")
     model.eval()
-
     return model
 
 def predict(image_array, img_size = 100):

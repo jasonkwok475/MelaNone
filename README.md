@@ -8,17 +8,28 @@ At the same time, smaller segments of the captured images are streamed to a PyTo
 ## Getting Started
 To get started with MelaNone, clone this repository and follow the installation instructions below:
 
-```git clone https://github.com/jasonkwok475/MelaNone.git
+```
+git clone https://github.com/jasonkwok475/MelaNone.git
+```
 
+Install the required packages and start the virtual environment:
+```
 pip install uv
 uv venv
 source .venv/Scripts/activate
+```
 
+Build the front end
+```
 cd frontend
 npm run build
+```
 
+And run the app!
+```
 cd ..
-uv run backend/server.py```
+uv run backend/server.py
+```
 
 Now, you can visit the site at http://127.0.0.1:5000/ 
 

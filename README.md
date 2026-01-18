@@ -22,7 +22,8 @@ uv sync
 
 Build the front end:
 ```
-cd frontend
+cd 
+npm install
 npm run build
 ```
 

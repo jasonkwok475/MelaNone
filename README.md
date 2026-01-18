@@ -17,9 +17,10 @@ Install the required packages and start the virtual environment:
 pip install uv
 uv venv
 source .venv/Scripts/activate
+uv sync
 ```
 
-Build the front end
+Build the front end:
 ```
 cd frontend
 npm run build

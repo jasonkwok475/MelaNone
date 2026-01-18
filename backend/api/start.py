@@ -110,7 +110,7 @@ class AnalysisManager:
         self._update_progress("Capturing Images", 10, "Initializing camera...")
         time.sleep(1)  # Simulate initialization
 
-        with DeviceManager(1) as device1, DeviceManager(3) as device3: #, DeviceManager(3) as device3:
+        with DeviceManager(1) as device1, DeviceManager(2) as device3: #, DeviceManager(3) as device3:
             devices = [device1, device3]
             images = []
             time.sleep(2)  # Allow cameras to warm up
@@ -233,22 +233,22 @@ class AnalysisManager:
             print("\n=== Step 1: Reconstructing 3D geometry ===")
             pcd = reconstructor.reconstruct_from_images()
             
-            # # Visualize point cloud
-            # print("\nVisualizing point cloud... (close window to continue)")
-            # o3d.visualization.draw_geometries([pcd],  # type: ignore
-            #                                 window_name="Reconstructed Point Cloud",
-            #                                 width=1024, height=768)
+            # Visualize point cloud
+            print("\nVisualizing point cloud... (close window to continue)")
+            o3d.visualization.draw_geometries([pcd],  # type: ignore
+                                            window_name="Reconstructed Point Cloud",
+                                            width=1024, height=768)
             
             # Create mesh from point cloud
             print("\n=== Step 2: Creating mesh ===")
             mesh_o3d = reconstructor.create_mesh_from_point_cloud(pcd, depth=9)
             
-            # # Visualize mesh
-            # print("\nVisualizing mesh... (close window to continue)")
-            # mesh_o3d.compute_vertex_normals()
-            # o3d.visualization.draw_geometries([mesh_o3d],  # type: ignore
-            #                                 window_name="Reconstructed Mesh",
-            #                                 width=1024, height=768)
+            # Visualize mesh
+            print("\nVisualizing mesh... (close window to continue)")
+            mesh_o3d.compute_vertex_normals()
+            o3d.visualization.draw_geometries([mesh_o3d],  # type: ignore
+                                            window_name="Reconstructed Mesh",
+                                            width=1024, height=768)
             
             # Convert open3d mesh to dictionary format for frontend
             vertices = np.asarray(mesh_o3d.vertices).tolist()

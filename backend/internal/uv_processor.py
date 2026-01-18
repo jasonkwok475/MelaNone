@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from model import predict
+from backend.internal.model import predict
 
 # Expected image size for the melanoma model
 IMG_SIZE = 50

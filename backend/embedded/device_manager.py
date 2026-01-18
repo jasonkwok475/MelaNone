@@ -86,3 +86,21 @@ class DeviceManager:
         Requests the current frame. Returns None if no frame is available.
         """
         return self.frame
+    
+
+if __name__ == "__main__":
+    with DeviceManager(3) as device:
+        while True:
+            device.run()
+            key = cv2.waitKey(1)
+            if key % 256 == 27:  # ESC pressed
+                print("Escape hit, closing...")
+                break
+            elif key % 256 == 32:  # SPACE pressed
+                frame = device.get_current_frame()
+                if frame is not None:
+                    img_name = "captured_image.png"
+                    cv2.imwrite(img_name, frame)
+                    print(f"[bold green]Image saved:[/] {img_name}")
+                else:
+                    print("[bold red]No frame available to capture![/]")

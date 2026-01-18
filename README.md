@@ -6,7 +6,7 @@ MelaNone is a limb-scanning system designed to help detect melanoma early on. A 
 At the same time, smaller segments of the captured images are streamed to a PyTorch AI melanoma model that detects skin spots then classifies them as likely benign or potentially concerning. Once the analysis has completed, the results are summarized and displayed on our website.
 
 ## Getting Started
-To get started with MelaNoma, clone this repository and follow the installation instructions below:
+To get started with MelaNone, clone this repository and follow the installation instructions below:
 
 ```git clone https://github.com/jasonkwok475/MelaNone.git
 

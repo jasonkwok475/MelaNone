@@ -39,3 +39,7 @@ Now, you can visit the site at http://127.0.0.1:5000/
 ## Demo
 
 https://youtube.com/shorts/z7EJEKKdNtc?si=PFJrTsuNlRYjEFIi
+
+## Devpost
+
+https://devpost.com/software/melanone 

@@ -4,10 +4,10 @@ from rich import print
 import os
 import time
 from queue import Queue
-from backend.internal.model import predict, load_model
-from backend.internal.mesh import ObjectReconstructor
-from backend.embedded.device_manager import DeviceManager
-from backend.debug.error_handling import catch_exceptions, ErrorType
+from internal.model import predict, load_model
+from internal.mesh import ObjectReconstructor
+from embedded.device_manager import DeviceManager
+from debug.error_handling import catch_exceptions, ErrorType
 
 try:
     import serial
@@ -46,14 +46,14 @@ class AnalysisManager:
 
 
     @catch_exceptions(ErrorType.IMAGE_SAVE)
-    def _save_image(self, image, images, i: int):
-        image_path = f"./images/rotation_{i}.jpg"
+    def _save_image(self, image, images, suffix: int):
+        image_path = f"{self.IMAGE_FOLDER}/rotation_{suffix}.jpg"
         cv2.imwrite(image_path, image)
         print(f"[bold green]Saved image: {image_path}")
         images.extend(image_path if isinstance(image_path, list) else [image_path])
 
     @catch_exceptions(ErrorType.SERIAL)
-    def _capture_from_all_devices(self, ser, devices, images):
+    def _capture_from_all_devices(self, ser, devices, images, suffix: int):
         if ser:
             ser.write(b'1')  # Send signal to rotate
             response = ser.readline().decode().strip()
@@ -62,7 +62,7 @@ class AnalysisManager:
 
         for device in devices:
             image = device.get_current_frame()
-            self._save_image(image=image, images=images)
+            self._save_image(image=image, images=images, suffix=suffix)
 
     @catch_exceptions(ErrorType.SERIAL)
     def _establish_serial(self):
@@ -108,8 +108,7 @@ class AnalysisManager:
                 self._update_progress("Capturing Images", 25, "Using camera without rotation")
 
             for i in range(4):  # Capture 4 rotations
-                self._capture_from_all_devices(ser, devices, images)
-
+                self._capture_from_all_devices(ser, devices, images, i)
             if ser:
                 ser.write(b'3')
                 ser.close()

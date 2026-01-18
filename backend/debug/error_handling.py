@@ -1,3 +1,4 @@
+import sys
 from enum import Enum
 import functools
 
@@ -26,9 +27,9 @@ def catch_exceptions(error_type: ErrorType):
                     print(f"Warning: Mesh reconstruction failed: {e}")
                 elif error_type == ErrorType.ANALYSIS:
                     print(f"Warning: Analysis failed: {e}")
-                else:
-                    print(f"[bold red]An unknown exception occurred in function '{func.__name__}'")
+
+                print(f"[bold red]An exception occurred in function '{func.__name__}'")
                 print(e)
-                return None
+                sys.exit(1)
         return wrapper
     return decorator

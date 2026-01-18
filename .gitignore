@@ -10,3 +10,4 @@ backend/embedded/__pycache__/
 melanoma_classifier/*
 
 images/
+image/

@@ -12,7 +12,7 @@ class DeviceManager:
     DEBUG = False
     MAIN_WINDOW = "Webcam Feed - Press SPACE to capture, ESC to exit"
     DEFAULT_CAMERA = 0
-    def __init__(self, camera_num: int = 0, port: int = 5005):
+    def __init__(self, camera_num: int = 1, port: int = 5005):
         self.port = port
         self.camera = cv2.VideoCapture(camera_num)
         self.frame = None

@@ -1,3 +1,4 @@
+import shutil
 import cv2
 import numpy as np
 from rich import print
@@ -12,7 +13,7 @@ from debug.error_handling import catch_exceptions, ErrorType
 try:
     import serial
 
-    SERIAL_AVAILABLE = False
+    SERIAL_AVAILABLE = True
 except ImportError:
     SERIAL_AVAILABLE = False
     print("Warning: pyserial not installed. Serial communication will be disabled.")
@@ -25,10 +26,13 @@ class AnalysisManager:
         self.is_running = False
         self.progress = 0
         self.current_step = ""
-        self.queue = Queue()  # For sending progress updates to frontend
+        self.queue = Queue()
         self.results = None
-        if not os.path.exists(self.IMAGE_FOLDER):
-            os.makedirs(self.IMAGE_FOLDER)
+
+        if os.path.exists(self.IMAGE_FOLDER):
+            shutil.rmtree(self.IMAGE_FOLDER)   # deletes folder and contents
+
+        os.makedirs(self.IMAGE_FOLDER)         # recreates empty folder
 
     def _update_progress(self, step, progress_pct, message=""):
         """Send progress update to frontend via queue"""
@@ -46,8 +50,8 @@ class AnalysisManager:
 
 
     @catch_exceptions(ErrorType.IMAGE_SAVE)
-    def _save_image(self, image, images, suffix: int):
-        image_path = f"{self.IMAGE_FOLDER}/rotation_{suffix}.jpg"
+    def _save_image(self, image, images, suffix: int, device: int):
+        image_path = f"{self.IMAGE_FOLDER}/{device}_rotation_{suffix}.jpg"
         cv2.imwrite(image_path, image)
         print(f"[bold green]Saved image: {image_path}")
         images.extend(image_path if isinstance(image_path, list) else [image_path])
@@ -55,19 +59,41 @@ class AnalysisManager:
     @catch_exceptions(ErrorType.SERIAL)
     def _capture_from_all_devices(self, ser, devices, images, suffix: int):
         if ser:
-            ser.write(b'1')  # Send signal to rotate
-            response = ser.readline().decode().strip()
-            while response != '2':
+            print(type(ser))
+            print()
+            ser.write(b'1')
+            
+            while True:
                 response = ser.readline().decode().strip()
 
+                print(f"Serial Response: {response}")
+
+                if response == '-1':
+                    return # End of linear motion
+                if response == '2':  # Rotation complete
+                    break
+
+        print("Capturing images from all devices...")
+        i = 0
         for device in devices:
             image = device.get_current_frame()
-            self._save_image(image=image, images=images, suffix=suffix)
+            self._save_image(image=image, images=images, suffix=suffix, device=i)
+            i += 1
+
+        return
 
     @catch_exceptions(ErrorType.SERIAL)
     def _establish_serial(self):
-        ser = serial.Serial('COM3', 9600, timeout=5)  # Adjust COM port as needed
+        ser = serial.Serial('COM6', 115200, timeout=5)  # Adjust COM port as needed
         time.sleep(1)  # Wait for connection to establish
+        ser.write(b'3') # Reset position
+
+        while True:
+          response = ser.readline().decode().strip()
+
+          if response == '2':  # Reset complete
+              break
+
         return ser
 
     @catch_exceptions(ErrorType.CAMERA)
@@ -76,11 +102,13 @@ class AnalysisManager:
         self._update_progress("Capturing Images", 10, "Initializing camera...")
         time.sleep(1)  # Simulate initialization
 
-        with DeviceManager(0) as device1:  # DeviceManager(1) as device2, DeviceManager(2) as device3:
-            # devices = [device1, device2, device3]
-            devices = [device1]
+        with DeviceManager(1) as device1, DeviceManager(3) as device3: #, DeviceManager(3) as device3:
+            devices = [device1, device3]
             images = []
-            time.sleep(2)
+            time.sleep(2)  # Allow cameras to warm up
+            
+            self._update_progress("Capturing Images", 12, "Camera initialized...")
+
             """
             primary change here was adding a sleep so that the device manager has time to start capturing frames
             without the delay, a race condition occurs since the IO overhead of init the camera is significantly 
@@ -101,16 +129,26 @@ class AnalysisManager:
             # Initialize serial connection for device communication if available
             ser = None
             if SERIAL_AVAILABLE:
+                self._update_progress("Capturing Images", 15, "Resetting position...")
+
                 ser = self._establish_serial()
-                self._update_progress("Capturing Images", 25, "Using camera without rotation")
+                self._update_progress("Capturing Images", 20, "Capturing images...")
             else:
                 print("Serial module not available. Using camera only.")
-                self._update_progress("Capturing Images", 25, "Using camera without rotation")
+                self._update_progress("Capturing Images", 25, "Using camera without serial communication")
 
             for i in range(4):  # Capture 4 rotations
                 self._capture_from_all_devices(ser, devices, images, i)
+                print(f"Captured rotation {i+1}/4")
             if ser:
                 ser.write(b'3')
+
+                while True:
+                  response = ser.readline().decode().strip()
+
+                  if response == '2':  # Reset complete
+                      break
+
                 ser.close()
 
             self._update_progress("Capturing Images", 30, "Image capture complete")

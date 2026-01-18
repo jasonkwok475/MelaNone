@@ -1,6 +1,10 @@
 from flask import Flask, render_template
 import os
 
+
+"""
+Main entrypoint for the serverside 
+"""
 app = Flask(__name__, static_folder='../frontend', static_url_path='', template_folder='../frontend')
 
 @app.route('/')

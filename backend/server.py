@@ -3,7 +3,7 @@ from flask_cors import CORS
 import threading
 import json
 import os
-from api.start import AnalysisManager
+from backend.api.start import AnalysisManager
 
 
 """

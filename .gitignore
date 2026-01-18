@@ -6,3 +6,7 @@
 
 backend/api/__pycache__/
 backend/internal/__pycache__/
+backend/embedded/__pycache__/
+melanoma_classifier/*
+
+images/

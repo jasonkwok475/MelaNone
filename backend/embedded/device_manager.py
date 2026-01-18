@@ -9,7 +9,7 @@ class DeviceManager:
 
     Note: Setting DEFAULT_CAMERA = 0 uses the default camera on your machine
     """
-    DEBUG = True
+    DEBUG = False
     MAIN_WINDOW = "Webcam Feed - Press SPACE to capture, ESC to exit"
     DEFAULT_CAMERA = 0
     def __init__(self, camera_num: int = 0, port: int = 5005):
@@ -47,6 +47,10 @@ class DeviceManager:
             self.last_frame_time = current_time
 
     def debug_display_img(self, frame):
+        if not self.DEBUG:
+            print("[bold magenta]Warning: NOT in debug mode, display disabled[/bold magenta]")
+            return
+
         # Display FPS on the image
         if self.current_fps is not None:
             cv2.putText(frame, f"FPS: {int(self.current_fps)}", (20, 70),
@@ -55,20 +59,22 @@ class DeviceManager:
         cv2.imshow(self.MAIN_WINDOW, frame)
 
     def __enter__(self):
-        s = "DEBUG MODE ENABLED" if self.DEBUG else "DEBUG MODE DISABLED"
+        s = "DEBUG MODE ENABLED" if self.DEBUG else ""
         print(f"[bold blue]{s}")
 
         self.running_frame_fetch = True
         self.run_img_fetch_thread.start()
 
         # Initialize the webcam capture object (0 indicates the default camera)
-        cv2.namedWindow(self.MAIN_WINDOW)
+        if self.DEBUG:
+            cv2.namedWindow(self.MAIN_WINDOW)
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.running_frame_fetch = False
         self.run_img_fetch_thread.join()
         self.camera.release()
         cv2.destroyAllWindows()
+        print("[bold red]Device Manager Finished[/]")
 
     def run(self):
         # executes main thread required procedures
@@ -80,14 +86,3 @@ class DeviceManager:
         Requests the current frame. Returns None if no frame is available.
         """
         return self.frame
-
-if __name__ == "__main__":
-    with DeviceManager(DeviceManager.DEFAULT_CAMERA) as device_manager:
-        while True:
-            device_manager.run()
-            # Wait for a key press (1ms delay in the loop)
-            k = cv2.waitKey(1)
-            if k % 256 == 27:
-                # ESC pressed
-                print("Escape hit, closing...")
-                break

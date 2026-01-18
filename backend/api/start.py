@@ -1,10 +1,13 @@
-import time
-from queue import Queue
-from internal.model import predict, load_model
-from internal.mesh import ObjectReconstructor
-from embedded.device_manager import DeviceManager
 import cv2
 import numpy as np
+from rich import print
+import os
+import time
+from queue import Queue
+from backend.internal.model import predict, load_model
+from backend.internal.mesh import ObjectReconstructor
+from backend.embedded.device_manager import DeviceManager
+from backend.debug.error_handling import catch_exceptions, ErrorType
 
 try:
     import serial
@@ -14,16 +17,18 @@ except ImportError:
     SERIAL_AVAILABLE = False
     print("Warning: pyserial not installed. Serial communication will be disabled.")
 
-
 class AnalysisManager:
     """Manages the melanoma detection analysis workflow"""
 
+    IMAGE_FOLDER = "./image"
     def __init__(self):
         self.is_running = False
         self.progress = 0
         self.current_step = ""
         self.queue = Queue()  # For sending progress updates to frontend
         self.results = None
+        if not os.path.exists(self.IMAGE_FOLDER):
+            os.makedirs(self.IMAGE_FOLDER)
 
     def _update_progress(self, step, progress_pct, message=""):
         """Send progress update to frontend via queue"""
@@ -39,70 +44,77 @@ class AnalysisManager:
         self.queue.put(update)
         print(f"[{step}] {progress_pct}% - {message}")
 
+
+    @catch_exceptions(ErrorType.IMAGE_SAVE)
+    def _save_image(self, image, images, i: int):
+        image_path = f"./images/rotation_{i}.jpg"
+        cv2.imwrite(image_path, image)
+        print(f"[bold green]Saved image: {image_path}")
+        images.extend(image_path if isinstance(image_path, list) else [image_path])
+
+    @catch_exceptions(ErrorType.SERIAL)
+    def _capture_from_all_devices(self, ser, devices, images):
+        if ser:
+            ser.write(b'1')  # Send signal to rotate
+            response = ser.readline().decode().strip()
+            while response != '2':
+                response = ser.readline().decode().strip()
+
+        for device in devices:
+            image = device.get_current_frame()
+            self._save_image(image=image, images=images)
+
+    @catch_exceptions(ErrorType.SERIAL)
+    def _establish_serial(self):
+        ser = serial.Serial('COM3', 9600, timeout=5)  # Adjust COM port as needed
+        time.sleep(1)  # Wait for connection to establish
+        return ser
+
+    @catch_exceptions(ErrorType.CAMERA)
     def _capture_images(self):
         """Step 1: Capture images from device using rotation"""
         self._update_progress("Capturing Images", 10, "Initializing camera...")
         time.sleep(1)  # Simulate initialization
 
-        try:
-            # devices = [DeviceManager(camera_num=i) for i in range(1)]
-            # for device in devices:
-            #     device.run()
-            # images = []
+        with DeviceManager(0) as device1:  # DeviceManager(1) as device2, DeviceManager(2) as device3:
+            # devices = [device1, device2, device3]
+            devices = [device1]
+            images = []
+            time.sleep(2)
+            """
+            primary change here was adding a sleep so that the device manager has time to start capturing frames
+            without the delay, a race condition occurs since the IO overhead of init the camera is significantly 
+            higher than the CPU clock speed (ie it runs code before camera warms up)
+            
+            feel free to uncomment the code above to get multi cameras working. 
+            
+            bug fixes:
+            - create ./image dir if it does not exist
+            - added sleep to startup
+            - disabled debug mode in the device manager (no longer displays live footage, but 
+                allows for consistent repeated calls to the device manager)
+            - refactoring bc code was hard to read
+            """
 
-            with DeviceManager(0) as device1: # DeviceManager(1) as device2, DeviceManager(2) as device3:
-                # devices = [device1, device2, device3]
-                devices = [device1]
-                images = []
+            self._update_progress("Capturing Images", 20, "Camera ready, capturing frames...")
 
-                for device in devices:
-                    device.run()
+            # Initialize serial connection for device communication if available
+            ser = None
+            if SERIAL_AVAILABLE:
+                ser = self._establish_serial()
+                self._update_progress("Capturing Images", 25, "Using camera without rotation")
+            else:
+                print("Serial module not available. Using camera only.")
+                self._update_progress("Capturing Images", 25, "Using camera without rotation")
 
-                self._update_progress("Capturing Images", 20, "Camera ready, capturing frames...")
+            for i in range(4):  # Capture 4 rotations
+                self._capture_from_all_devices(ser, devices, images)
 
-                # Initialize serial connection for device communication if available
-                ser = None
-                if SERIAL_AVAILABLE:
-                    try:
-                        ser = serial.Serial('COM3', 9600, timeout=5)  # Adjust COM port as needed
-                        time.sleep(1)  # Wait for connection to establish
-                        self._update_progress("Capturing Images", 25, "Serial connection established")
-                    except Exception as e:
-                        print(f"Serial connection failed: {e}. Using camera only.")
-                        self._update_progress("Capturing Images", 25, "Using camera without rotation")
-                else:
-                    print("Serial module not available. Using camera only.")
-                    self._update_progress("Capturing Images", 25, "Using camera without rotation")
+            if ser:
+                ser.write(b'3')
+                ser.close()
 
-                for i in range(4):  # Capture 4 rotations
-                    if ser:
-                        try:
-                            ser.write(b'1')  # Send signal to rotate
-                            response = ser.readline().decode().strip()
-                            while response != '2':
-                                response = ser.readline().decode().strip()
-                        except Exception as e:
-                            print(f"Serial communication error: {e}")
-
-                    for device in devices:
-                        image = device.get_current_frame()
-                        image_path = f"./images/rotation_{i}.jpg"
-                        # TODO: IM NOT SURE WHY we want to persist this on disc. Might as well leave it in memory no?
-                        try:
-                            cv2.imwrite(image_path, image)
-                            images.extend(image_path if isinstance(image_path, list) else [image_path])
-                        except Exception as e:
-                            print(f"Failed to save image: {e}")
-
-                if ser:
-                    ser.write(b'3')
-                    ser.close()
-
-                self._update_progress("Capturing Images", 30, "Image capture complete")
-
-        except Exception as e:
-            print(f"Warning: Camera capture failed: {e}")
-            self._update_progress("Capturing Images", 30, "Using sample images...")
+            self._update_progress("Capturing Images", 30, "Image capture complete")
 
         return ["sample_image_1.jpg", "sample_image_2.jpg", "sample_image_3.jpg"]
 

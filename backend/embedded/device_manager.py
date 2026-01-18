@@ -37,16 +37,16 @@ class DeviceManager:
                 print("failed to grab frame")
                 break
             self.frame = frame
+            # Calculate FPS
+            current_time = time.time()
+            # FPS = 1 / time_taken_for_one_frame
+            self.current_fps = 1 / (current_time - self.last_frame_time)
+            self.last_frame_time = current_time
 
     def debug_display_img(self, frame):
-        # Calculate FPS
-        current_time = time.time()
-        # FPS = 1 / time_taken_for_one_frame
-        self.current_fps = 1 / (current_time - self.last_frame_time)
-        self.last_frame_time = current_time
-
         # Display FPS on the image
-        cv2.putText(frame, f"FPS: {int(self.current_fps)}", (20, 70),
+        if self.current_fps is not None:
+            cv2.putText(frame, f"FPS: {int(self.current_fps)}", (20, 70),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         cv2.imshow(self.MAIN_WINDOW, frame)
@@ -73,7 +73,7 @@ class DeviceManager:
             self.debug_display_img(self.frame)
 
 
-with DeviceManager(1) as device_manager:
+with DeviceManager(2) as device_manager:
     while True:
         device_manager.run()
         # Wait for a key press (1ms delay in the loop)

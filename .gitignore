@@ -11,3 +11,9 @@ melanoma_classifier/*
 
 images/
 image/
+
+mesh.mtl
+mesh.obj
+uv_map.png
+
+__pycache__/

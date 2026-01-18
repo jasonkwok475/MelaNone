@@ -201,6 +201,7 @@ class AnalysisManager:
             'concerningSpots': analysis_results.get('concerningSpots', 0),
             'confidenceScores': analysis_results.get('confidenceScores', []),
             'classifications': analysis_results.get('classifications', []),
+            'meshData': mesh_data,
             'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
         }
 

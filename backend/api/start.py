@@ -1,4 +1,5 @@
 import shutil
+import sys
 import cv2
 import numpy as np
 from rich import print
@@ -9,6 +10,12 @@ from internal.model import predict, load_model
 from internal.mesh import ObjectReconstructor
 from embedded.device_manager import DeviceManager
 from debug.error_handling import catch_exceptions, ErrorType
+import open3d as o3d
+
+# Configuration - CHANGE THESE VALUES
+IMAGE_FOLDER_STORAGE = os.getcwd() + "/image" # UPDATE THIS PATH
+ANGLE_STEP = 30  # Degrees between each image horizontally
+
 
 try:
     import serial
@@ -21,7 +28,7 @@ except ImportError:
 class AnalysisManager:
     """Manages the melanoma detection analysis workflow"""
 
-    IMAGE_FOLDER = "./image"
+    IMAGE_FOLDER = IMAGE_FOLDER_STORAGE
     def __init__(self):
         self.is_running = False
         self.progress = 0
@@ -153,11 +160,10 @@ class AnalysisManager:
 
             self._update_progress("Capturing Images", 30, "Image capture complete")
 
-        return ["sample_image_1.jpg", "sample_image_2.jpg", "sample_image_3.jpg"]
+        return
 
-    def _reconstruct_3d_mesh(self, images):
+    def _reconstruct_3d_mesh(self):
         """Step 2: Reconstruct 3D mesh from captured images"""
-        self._update_progress("3D Reconstruction", 35, "Processing images...")
         time.sleep(1)
 
         try:
@@ -178,10 +184,114 @@ class AnalysisManager:
             self._update_progress("3D Reconstruction", 65, "Mesh reconstruction complete")
 
             return mesh_data
+
         except Exception as e:
             print(f"Warning: Mesh reconstruction failed: {e}")
             self._update_progress("3D Reconstruction", 65, "Using sample mesh data...")
             return self._generate_sample_mesh()
+
+    def _compile_results(self, mesh_data, analysis_results):
+        """Step 4: Compile final results"""
+        self._update_progress("Finalizing", 95, "Compiling results...")
+        time.sleep(0.5)
+
+        final_results = {
+            'totalObjectsAnalyzed': analysis_results['total_objects_analyzed'],
+            'concerningSpots': analysis_results['concerning_spots'],
+            'confidenceScores': analysis_results['confidence_scores'],
+            'classifications': analysis_results['classifications'],
+            'meshData': mesh_data,
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+        self._update_progress("Finalizing", 100, "Complete!")
+        return final_results
+
+    def run_analysis(self):
+        """Main analysis workflow - orchestrates all steps"""
+        try:
+            self.is_running = True
+            self.progress = 0
+            self.results = None
+
+            print("\n" + "=" * 50)
+            print("Starting Melanoma Analysis Workflow")
+            print("=" * 50 + "\n")
+
+            reconstructor = ObjectReconstructor(
+                image_folder=IMAGE_FOLDER_STORAGE,
+                angle_step=ANGLE_STEP
+            )
+            
+            # Capture images
+            self._capture_images()
+            
+            # Load images
+            images = reconstructor.load_images()
+            
+            # Reconstruct 3D object from images
+            print("\n=== Step 1: Reconstructing 3D geometry ===")
+            pcd = reconstructor.reconstruct_from_images()
+            
+            # Visualize point cloud
+            print("\nVisualizing point cloud... (close window to continue)")
+            o3d.visualization.draw_geometries([pcd],  # type: ignore
+                                            window_name="Reconstructed Point Cloud",
+                                            width=1024, height=768)
+            
+            # Create mesh from point cloud
+            print("\n=== Step 2: Creating mesh ===")
+            mesh = reconstructor.create_mesh_from_point_cloud(pcd, depth=9)
+            
+            # Visualize mesh
+            print("\nVisualizing mesh... (close window to continue)")
+            mesh.compute_vertex_normals()
+            o3d.visualization.draw_geometries([mesh],  # type: ignore
+                                            window_name="Reconstructed Mesh",
+                                            width=1024, height=768)
+            
+            # Generate UV map
+            print("\n=== Step 3: Generating UV map ===")
+            uv_coords, texture = reconstructor.generate_uv_map(mesh)
+            
+            # Save mesh with UV coordinates
+            reconstructor.save_mesh_with_uv(mesh, uv_coords)
+            
+            print("\n✓ Processing complete!")
+            print(f"  - Mesh saved to: mesh.obj")
+            print(f"  - Material saved to: mesh.mtl")
+            print(f"  - UV map saved to: uv_map.png")
+
+            analysis_results = {
+                'total_objects_analyzed': 24,
+                'concerning_spots': 0,
+                'confidence_scores': [0.92, 0.87, 0.95],
+                'classifications': ['melanoma', 'benign', 'melanoma']
+            }
+
+            # Step 4: Compile results
+            self.results = self._compile_results(mesh, analysis_results)
+
+            print("\n" + "=" * 50)
+            print("Analysis Complete!")
+            print("=" * 50 + "\n")
+            print(f"Results: {self.results}")
+
+        except Exception as e:
+            print(f"Error during analysis: {e}")
+            self.queue.put({
+                'status': 'error',
+                'message': f'Analysis failed: {str(e)}'
+            })
+            self.results = None
+
+        finally:
+            self.is_running = False
+
+
+
+
+
 
     def _generate_sample_mesh(self):
         """Generate sample mesh data (icosahedron geometry)"""
@@ -224,89 +334,3 @@ class AnalysisManager:
             'faces': faces,
             'type': 'icosahedron'
         }
-
-    def _analyze_lesions(self):
-        """Step 3: Analyze lesions using ML model"""
-        self._update_progress("Lesion Analysis", 70, "Loading ML model...")
-        time.sleep(0.5)
-
-        try:
-            model = load_model()
-            self._update_progress("Lesion Analysis", 80, "Running predictions...")
-            time.sleep(2)  # Simulate prediction time
-
-            # Simulate analysis results
-            analysis_results = {
-                'total_objects_analyzed': 24,
-                'concerning_spots': 3,
-                'confidence_scores': [0.92, 0.87, 0.95],
-                'classifications': ['melanoma', 'benign', 'melanoma']
-            }
-
-            self._update_progress("Lesion Analysis", 90, "Analysis complete")
-            return analysis_results
-        except Exception as e:
-            print(f"Warning: Analysis failed: {e}")
-            self._update_progress("Lesion Analysis", 90, "Using sample analysis data...")
-            return {
-                'total_objects_analyzed': 24,
-                'concerning_spots': 3,
-                'confidence_scores': [0.92, 0.87, 0.95],
-                'classifications': ['melanoma', 'benign', 'melanoma']
-            }
-
-    def _compile_results(self, mesh_data, analysis_results):
-        """Step 4: Compile final results"""
-        self._update_progress("Finalizing", 95, "Compiling results...")
-        time.sleep(0.5)
-
-        final_results = {
-            'totalObjectsAnalyzed': analysis_results['total_objects_analyzed'],
-            'concerningSpots': analysis_results['concerning_spots'],
-            'confidenceScores': analysis_results['confidence_scores'],
-            'classifications': analysis_results['classifications'],
-            'meshData': mesh_data,
-            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
-        }
-
-        self._update_progress("Finalizing", 100, "Complete!")
-        return final_results
-
-    def run_analysis(self):
-        """Main analysis workflow - orchestrates all steps"""
-        try:
-            self.is_running = True
-            self.progress = 0
-            self.results = None
-
-            print("\n" + "=" * 50)
-            print("Starting Melanoma Analysis Workflow")
-            print("=" * 50 + "\n")
-
-            # Step 1: Capture images
-            images = self._capture_images()
-
-            # Step 2: Reconstruct 3D mesh
-            mesh_data = self._reconstruct_3d_mesh(images)
-
-            # Step 3: Analyze lesions
-            analysis_results = self._analyze_lesions()
-
-            # Step 4: Compile results
-            self.results = self._compile_results(mesh_data, analysis_results)
-
-            print("\n" + "=" * 50)
-            print("Analysis Complete!")
-            print("=" * 50 + "\n")
-            print(f"Results: {self.results}")
-
-        except Exception as e:
-            print(f"Error during analysis: {e}")
-            self.queue.put({
-                'status': 'error',
-                'message': f'Analysis failed: {str(e)}'
-            })
-            self.results = None
-
-        finally:
-            self.is_running = False

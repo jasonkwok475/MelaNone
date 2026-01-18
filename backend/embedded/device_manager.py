@@ -3,12 +3,15 @@ import threading
 import time
 from rich import print
 
-"""
-Defines common interface for external devices
-"""
 class DeviceManager:
+    """
+    Defines common interface for external devices
+
+    Note: Setting DEFAULT_CAMERA = 0 uses the default camera on your machine
+    """
     DEBUG = True
     MAIN_WINDOW = "Webcam Feed - Press SPACE to capture, ESC to exit"
+    DEFAULT_CAMERA = 0
     def __init__(self, camera_num: int = 0, port: int = 5005):
         self.port = port
         self.camera = cv2.VideoCapture(camera_num)
@@ -72,8 +75,13 @@ class DeviceManager:
         if self.frame is not None:
             self.debug_display_img(self.frame)
 
+    def get_current_frame(self) -> cv2.typing.MatLike | None:
+        """
+        Requests the current frame. Returns None if no frame is available.
+        """
+        return self.frame
 
-with DeviceManager(2) as device_manager:
+with DeviceManager(DeviceManager.DEFAULT_CAMERA) as device_manager:
     while True:
         device_manager.run()
         # Wait for a key press (1ms delay in the loop)

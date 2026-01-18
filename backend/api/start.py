@@ -233,38 +233,38 @@ class AnalysisManager:
             print("\n=== Step 1: Reconstructing 3D geometry ===")
             pcd = reconstructor.reconstruct_from_images()
             
-            # Visualize point cloud
-            print("\nVisualizing point cloud... (close window to continue)")
-            o3d.visualization.draw_geometries([pcd],  # type: ignore
-                                            window_name="Reconstructed Point Cloud",
-                                            width=1024, height=768)
+            # # Visualize point cloud
+            # print("\nVisualizing point cloud... (close window to continue)")
+            # o3d.visualization.draw_geometries([pcd],  # type: ignore
+            #                                 window_name="Reconstructed Point Cloud",
+            #                                 width=1024, height=768)
             
             # Create mesh from point cloud
             print("\n=== Step 2: Creating mesh ===")
-            mesh = reconstructor.create_mesh_from_point_cloud(pcd, depth=9)
+            mesh_o3d = reconstructor.create_mesh_from_point_cloud(pcd, depth=9)
             
-            # Convert open3d mesh to sample mesh format
-            vertices = np.asarray(mesh.vertices).tolist()
-            faces = np.asarray(mesh.triangles).tolist()
+            # # Visualize mesh
+            # print("\nVisualizing mesh... (close window to continue)")
+            # mesh_o3d.compute_vertex_normals()
+            # o3d.visualization.draw_geometries([mesh_o3d],  # type: ignore
+            #                                 window_name="Reconstructed Mesh",
+            #                                 width=1024, height=768)
+            
+            # Convert open3d mesh to dictionary format for frontend
+            vertices = np.asarray(mesh_o3d.vertices).tolist()
+            faces = np.asarray(mesh_o3d.triangles).tolist()
             mesh = {
                 'vertices': vertices,
                 'faces': faces,
                 'type': 'poisson_reconstruction'
             }
             
-            # Visualize mesh
-            print("\nVisualizing mesh... (close window to continue)")
-            mesh.compute_vertex_normals()
-            o3d.visualization.draw_geometries([mesh],  # type: ignore
-                                            window_name="Reconstructed Mesh",
-                                            width=1024, height=768)
-            
             # Generate UV map
             print("\n=== Step 3: Generating UV map ===")
-            uv_coords, texture = reconstructor.generate_uv_map(mesh)
+            uv_coords, texture = reconstructor.generate_uv_map(mesh_o3d)
             
             # Save mesh with UV coordinates
-            reconstructor.save_mesh_with_uv(mesh, uv_coords)
+            reconstructor.save_mesh_with_uv(mesh_o3d, uv_coords)
             
             print("\n✓ Processing complete!")
             print(f"  - Mesh saved to: mesh.obj")

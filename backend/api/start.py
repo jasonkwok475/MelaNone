@@ -243,6 +243,15 @@ class AnalysisManager:
             print("\n=== Step 2: Creating mesh ===")
             mesh = reconstructor.create_mesh_from_point_cloud(pcd, depth=9)
             
+            # Convert open3d mesh to sample mesh format
+            vertices = np.asarray(mesh.vertices).tolist()
+            faces = np.asarray(mesh.triangles).tolist()
+            mesh = {
+                'vertices': vertices,
+                'faces': faces,
+                'type': 'poisson_reconstruction'
+            }
+            
             # Visualize mesh
             print("\nVisualizing mesh... (close window to continue)")
             mesh.compute_vertex_normals()

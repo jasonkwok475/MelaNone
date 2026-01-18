@@ -289,7 +289,9 @@ class AnalysisManager:
             print("\n" + "=" * 50)
             print("Analysis Complete!")
             print("=" * 50 + "\n")
-            print(f"Results: {self.results}")
+
+            filtered_dict = {k: v for k, v in self.results.items() if k != 'meshData'}
+            print(filtered_dict)
 
         except Exception as e:
             print(f"Error during analysis: {e}")

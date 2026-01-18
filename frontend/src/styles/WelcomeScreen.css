@@ -1,0 +1,64 @@
+.welcome-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+  animation: fadeIn 0.6s ease-in;
+}
+
+.welcome-content {
+  text-align: center;
+  max-width: 600px;
+  padding: 40px;
+}
+
+.welcome-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #ff6b9d, #00d4ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-description {
+  font-size: 1.2rem;
+  color: #b0b8cc;
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+.welcome-button {
+  padding: 14px 40px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff6b9d, #00d4ff);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+}
+
+.welcome-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+}
+
+.welcome-button:active {
+  transform: translateY(0);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

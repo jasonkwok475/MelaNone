@@ -5,7 +5,7 @@
 // speed
 // smaller number = faster rotation
 #define STEP_DELAY_US 1000
-define FWD_MOVE 200
+#define FWD_MOVE 200
 
 // define directions
 #define FORWARD 0
@@ -20,7 +20,6 @@ void setup() {
   pinMode(DIR_PIN, OUTPUT);
   pinMode(LIMIT_PIN, INPUT);  // config limit switch pin, might need to pullup (and update states below)
 
-  // Idle states
   digitalWrite(STEP_PIN, HIGH);
   digitalWrite(DIR_PIN, FORWARD);  
 
@@ -69,11 +68,12 @@ void moveForward(){
             digitalWrite(STEP_PIN, HIGH);
             delayMicroseconds(STEP_DELAY_US);
         }
-    pos += 1;
-    Serial.println(2); // print done
+        pos += 1;
+        Serial.println(2); // print done
     }
+
     else{
-    Serial.println(-1); // print error
+        Serial.println(-1); // print error
     }
 
 }

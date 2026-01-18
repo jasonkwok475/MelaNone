@@ -3,3 +3,6 @@
 .venv/
 
 .idea/
+
+backend/api/__pycache__/
+backend/internal/__pycache__/

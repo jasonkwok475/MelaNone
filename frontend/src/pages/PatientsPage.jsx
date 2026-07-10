@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Pencil, Plus, ScanLine, Trash2, UserPlus, Users } from 'lucide-react'
 import {
   useCreatePatient,
   useDeletePatient,
   usePatients,
   useUpdatePatient,
 } from '@/lib/patients'
+import { useCreateScan } from '@/lib/scans'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -27,6 +29,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import PatientFormDialog from '@/components/PatientFormDialog'
+import StartScanDialog from '@/components/StartScanDialog'
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -34,14 +37,27 @@ function formatDate(iso) {
 }
 
 export default function PatientsPage() {
+  const navigate = useNavigate()
   const patients = usePatients()
   const createPatient = useCreatePatient()
   const updatePatient = useUpdatePatient()
   const deletePatient = useDeletePatient()
+  const createScan = useCreateScan()
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState(null) // patient being edited, or null for create
   const [pendingDelete, setPendingDelete] = useState(null)
+  const [scanPatient, setScanPatient] = useState(null) // patient to start a scan for
+
+  const startScan = (payload) => {
+    createScan
+      .mutateAsync(payload)
+      .then((ack) => {
+        setScanPatient(null)
+        navigate(`/scans/${ack.scan_id}`)
+      })
+      .catch(() => {})
+  }
 
   const openCreate = () => {
     setEditing(null)
@@ -143,6 +159,9 @@ export default function PatientsPage() {
                   <TableCell className="text-[var(--text-muted)]">{formatDate(p.created_at)}</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
+                      <Button variant="outline" size="sm" onClick={() => setScanPatient(p)}>
+                        <ScanLine /> Scan
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(p)} aria-label="Edit">
                         <Pencil />
                       </Button>
@@ -170,6 +189,15 @@ export default function PatientsPage() {
         onSubmit={handleSubmit}
         isPending={activeMutation.isPending}
         error={activeMutation.error}
+      />
+
+      <StartScanDialog
+        open={!!scanPatient}
+        onOpenChange={(o) => !o && setScanPatient(null)}
+        patient={scanPatient}
+        onSubmit={startScan}
+        isPending={createScan.isPending}
+        error={createScan.error}
       />
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>

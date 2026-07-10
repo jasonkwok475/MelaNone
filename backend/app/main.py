@@ -6,6 +6,7 @@ Run in development with:
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -14,10 +15,17 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
-from app.api import meta, patients
+from app.api import meta, patients, scans
 from app.config import REPO_ROOT, get_settings
+from app.services.jobs import lifespan_jobs
 
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    async with lifespan_jobs():
+        yield
 
 
 def create_app() -> FastAPI:
@@ -27,6 +35,7 @@ def create_app() -> FastAPI:
         title=f"{settings.app_name} API",
         version=__version__,
         summary="Research/educational limb-scanning API — not a medical device.",
+        lifespan=_lifespan,
     )
 
     app.add_middleware(
@@ -40,6 +49,7 @@ def create_app() -> FastAPI:
     # API routes are namespaced under /api so the SPA can own the root path.
     app.include_router(meta.router, prefix="/api")
     app.include_router(patients.router, prefix="/api")
+    app.include_router(scans.router, prefix="/api")
 
     _mount_frontend(app)
     return app

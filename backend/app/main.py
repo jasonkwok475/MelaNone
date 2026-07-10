@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
-from app.api import meta
+from app.api import meta, patients
 from app.config import REPO_ROOT, get_settings
 
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
 
     # API routes are namespaced under /api so the SPA can own the root path.
     app.include_router(meta.router, prefix="/api")
+    app.include_router(patients.router, prefix="/api")
 
     _mount_frontend(app)
     return app

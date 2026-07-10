@@ -41,6 +41,15 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Legacy v1 code kept as reference only (ported in M5/M6/M7) — not held to the new style.
+extend-exclude = [
+    "backend/server.py",
+    "backend/api",
+    "backend/internal",
+    "backend/embedded",
+    "backend/debug",
+    "backend/app/db/migrations/versions",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]

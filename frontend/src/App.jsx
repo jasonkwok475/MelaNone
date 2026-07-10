@@ -13,6 +13,7 @@ import {
 import { apiGet } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import DisclaimerBadge from '@/components/DisclaimerBadge'
+import PatientsPage from '@/pages/PatientsPage'
 
 // Sections from docs/04. Each routes to a placeholder until its milestone lands.
 const NAV = [
@@ -150,13 +151,16 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            {NAV.filter((n) => n.milestone).map(({ to, label, milestone }) => (
-              <Route
-                key={to}
-                path={to}
-                element={<Placeholder title={label} milestone={milestone} />}
-              />
-            ))}
+            <Route path="/patients" element={<PatientsPage />} />
+            {NAV.filter((n) => n.milestone && n.to !== '/patients').map(
+              ({ to, label, milestone }) => (
+                <Route
+                  key={to}
+                  path={to}
+                  element={<Placeholder title={label} milestone={milestone} />}
+                />
+              ),
+            )}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

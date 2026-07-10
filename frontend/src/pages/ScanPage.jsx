@@ -1,10 +1,16 @@
+import { Suspense, lazy, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { AlertTriangle, ArrowLeft, Box, Loader2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, FileDown, Loader2 } from 'lucide-react'
 import { useScan, useScanEvents } from '@/lib/scans'
 import { classificationMeta, confidencePct, bodySiteLabel } from '@/lib/lesions'
+import { openScanReport } from '@/lib/report'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+
+// three.js is heavy; only pull it in when a completed scan actually renders the viewer.
+const LimbViewer = lazy(() => import('@/components/LimbViewer'))
 import {
   Table,
   TableBody,
@@ -13,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 const ACTIVE = new Set(['queued', 'running'])
 
@@ -120,39 +127,65 @@ function FailureCard({ scan, liveMessage }) {
 
 function ResultsView({ scan }) {
   const concerning = scan.concerning_count > 0
+  const [selectedId, setSelectedId] = useState(null)
+  const canRender3d = !!(scan.mesh_url && scan.texture_url)
+  const selected = scan.lesions.find((le) => le.id === selectedId) ?? null
+
+  const toggleSelect = (id) => setSelectedId((cur) => (cur === id ? null : id))
+
   return (
     <div className="mt-6 flex flex-col gap-6">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Spots analyzed" value={scan.total_lesions} />
-        <Stat
-          label="Flagged concerning"
-          value={scan.concerning_count}
-          tone={concerning ? 'concern' : 'benign'}
-        />
-        <Stat label="Model" value={scan.model_version ?? '—'} small />
-        <Stat label="Vertices" value={scan.vertex_count ?? '—'} />
+      <div className="flex items-start justify-between gap-4">
+        <div className="grid flex-1 grid-cols-2 gap-4 sm:grid-cols-4">
+          <Stat label="Spots analyzed" value={scan.total_lesions} />
+          <Stat
+            label="Flagged concerning"
+            value={scan.concerning_count}
+            tone={concerning ? 'concern' : 'benign'}
+          />
+          <Stat label="Model" value={scan.model_version ?? '—'} small />
+          <Stat label="Vertices" value={scan.vertex_count ?? '—'} />
+        </div>
+        <Button variant="outline" size="sm" onClick={() => openScanReport(scan)}>
+          <FileDown /> Export report
+        </Button>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-4 p-6 sm:flex-row">
-          {scan.thumbnail_url && (
-            <img
-              src={scan.thumbnail_url}
-              alt="Scan surface preview"
-              className="h-40 w-40 shrink-0 rounded-lg border border-[var(--surface-border)] object-cover"
-            />
+      <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
+        <div>
+          {canRender3d ? (
+            <Suspense
+              fallback={
+                <div className="flex h-[440px] items-center justify-center rounded-[var(--radius-card)] border border-[var(--surface-border)] text-sm text-[var(--text-muted)]">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading 3D viewer…
+                </div>
+              }
+            >
+              <LimbViewer
+                meshUrl={scan.mesh_url}
+                textureUrl={scan.texture_url}
+                lesions={scan.lesions}
+                selectedId={selectedId}
+                onSelectLesion={toggleSelect}
+              />
+            </Suspense>
+          ) : (
+            <Card>
+              <CardContent className="flex items-center gap-2 p-6 text-sm text-[var(--text-muted)]">
+                <AlertTriangle className="h-4 w-4 text-watch" />
+                No 3D mesh artifact is available for this scan.
+              </CardContent>
+            </Card>
           )}
-          <div className="flex flex-col justify-center gap-2">
-            <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-              <Box className="h-4 w-4" />
-              Interactive 3D model with lesion markers arrives in the next milestone.
-            </div>
-            <p className="text-xs text-[var(--text-muted)]">
-              Results are algorithmic estimates for research/education — not a medical diagnosis.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            Interactive 3D reconstruction with lesion markers — rotate, pan, and zoom; click a
+            marker for details. Results are algorithmic estimates for research/education,{' '}
+            <span className="font-medium">not a medical diagnosis</span>.
+          </p>
+        </div>
+
+        <LesionDetailPanel lesion={selected} onClear={() => setSelectedId(null)} />
+      </div>
 
       <div>
         <h2 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
@@ -171,7 +204,14 @@ function ResultsView({ scan }) {
               {scan.lesions.map((le) => {
                 const meta = classificationMeta(le.classification)
                 return (
-                  <TableRow key={le.id}>
+                  <TableRow
+                    key={le.id}
+                    onClick={() => toggleSelect(le.id)}
+                    className={cn(
+                      'cursor-pointer',
+                      le.id === selectedId && 'bg-brand-50 dark:bg-brand-500/10',
+                    )}
+                  >
                     <TableCell>
                       <Badge variant={meta.variant}>{meta.label}</Badge>
                     </TableCell>
@@ -187,6 +227,59 @@ function ResultsView({ scan }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function LesionDetailPanel({ lesion, onClear }) {
+  if (!lesion) {
+    return (
+      <Card className="h-fit">
+        <CardContent className="p-5 text-sm text-[var(--text-muted)]">
+          Select a marker or a table row to inspect a spot.
+        </CardContent>
+      </Card>
+    )
+  }
+  const meta = classificationMeta(lesion.classification)
+  return (
+    <Card className="h-fit">
+      <CardContent className="flex flex-col gap-3 p-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Spot detail</h3>
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-xs text-[var(--text-muted)] hover:text-brand-600"
+          >
+            Clear
+          </button>
+        </div>
+        <div>
+          <Badge variant={meta.variant}>{meta.label}</Badge>
+        </div>
+        <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1.5 text-sm">
+          <dt className="text-[var(--text-muted)]">Confidence</dt>
+          <dd>{confidencePct(lesion.confidence)}</dd>
+          <dt className="text-[var(--text-muted)]">UV</dt>
+          <dd>
+            {lesion.uv_x.toFixed(3)}, {lesion.uv_y.toFixed(3)}
+          </dd>
+          <dt className="text-[var(--text-muted)]">Position</dt>
+          <dd>
+            {lesion.x.toFixed(2)}, {lesion.y.toFixed(2)}, {lesion.z.toFixed(2)}
+          </dd>
+          {lesion.area != null && (
+            <>
+              <dt className="text-[var(--text-muted)]">Area</dt>
+              <dd>{lesion.area.toFixed(3)}</dd>
+            </>
+          )}
+        </dl>
+        <p className="text-xs text-[var(--text-muted)]">
+          Estimated classification and confidence — not a diagnosis.
+        </p>
+      </CardContent>
+    </Card>
   )
 }
 

@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import DisclaimerBadge from '@/components/DisclaimerBadge'
 import PatientsPage from '@/pages/PatientsPage'
 import ScanPage from '@/pages/ScanPage'
+import ViewerPage from '@/pages/ViewerPage'
 
 // Sections from docs/04. Each routes to a placeholder until its milestone lands.
 const NAV = [
@@ -154,7 +155,8 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/patients" element={<PatientsPage />} />
             <Route path="/scans/:scanId" element={<ScanPage />} />
-            {NAV.filter((n) => n.milestone && n.to !== '/patients').map(
+            <Route path="/viewer" element={<ViewerPage />} />
+            {NAV.filter((n) => n.milestone && !['/patients', '/viewer'].includes(n.to)).map(
               ({ to, label, milestone }) => (
                 <Route
                   key={to}

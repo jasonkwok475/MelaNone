@@ -13,6 +13,20 @@ export function classificationMeta(classification) {
   return CLASS_META[classification] ?? { variant: 'neutral', label: classification }
 }
 
+// Literal hex colors for WebGL markers (design-token CSS vars are DOM-only, not usable in
+// three.js materials). Kept in sync with the severity palette. Severity, not diagnosis.
+const CLASS_COLOR = {
+  melanoma: '#dc2626', // concern / red
+  keratosis: '#d97706', // watch / amber
+  nevus: '#d97706',
+  benign: '#16a34a', // green
+  unknown: '#64748b',
+}
+
+export function classificationColor(classification) {
+  return CLASS_COLOR[classification] ?? CLASS_COLOR.unknown
+}
+
 export function confidencePct(confidence) {
   return `${Math.round((confidence ?? 0) * 100)}%`
 }

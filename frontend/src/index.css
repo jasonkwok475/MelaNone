@@ -1,95 +1,63 @@
+@import "tailwindcss";
+
+/*
+ * MelaNone design tokens — a calm, clinical, trustworthy palette.
+ * Deliberately NOT v1's pink/purple. Primary = medical teal; semantic
+ * green/amber/red are reserved for lesion severity (benign/watch/concern).
+ */
+@theme {
+  /* Brand / primary — medical teal */
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+
+  /* Semantic severity tokens — used consistently for markers, badges, trends */
+  --color-benign: #16a34a;   /* green  — clear */
+  --color-watch: #d97706;    /* amber  — uncertain */
+  --color-concern: #dc2626;  /* red    — concerning */
+
+  --radius-card: 0.75rem;
+}
+
+/* Light (default) + dark surfaces driven by a single set of variables. */
 :root {
-  font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0a0e27;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --surface-app: #f8fafc;      /* slate-50  */
+  --surface-card: #ffffff;
+  --surface-border: #e2e8f0;   /* slate-200 */
+  --text-primary: #1e293b;     /* slate-800 */
+  --text-muted: #64748b;       /* slate-500 */
+  color-scheme: light;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-app: #0b1220;      /* deep neutral, not purple */
+    --surface-card: #111a2b;
+    --surface-border: #1e293b;
+    --text-primary: #e2e8f0;
+    --text-muted: #94a3b8;
+    color-scheme: dark;
+  }
 }
 
-html, body, #root {
-  width: 100%;
+html,
+body,
+#root {
   height: 100%;
-  overflow-x: hidden;
 }
 
 body {
   margin: 0;
-  width: 100%;
-  min-height: 100vh;
-  background-color: #0a0e27;
-}
-
-#root {
-  width: 100%;
-  min-height: 100vh;
-}
-
-a {
-  font-weight: 500;
-  color: #ff6b9d;
-  text-decoration: none;
-}
-
-a:hover {
-  color: #00d4ff;
-}
-
-button {
-  border-radius: 8px;
-  border: none;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.25s;
-}
-
-button:hover {
-  transform: translateY(-2px);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
-  padding: 0;
-}
-
-p {
-  margin: 0;
-  padding: 0;
-}
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  font-family: Inter, "Segoe UI", Roboto, system-ui, sans-serif;
+  background-color: var(--surface-app);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

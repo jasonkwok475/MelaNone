@@ -1,17 +1,47 @@
 [project]
 name = "melanone"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.2.0"
+description = "MelaNone v2 — limb-scanning system for early melanoma awareness (research/educational tool, not a medical device)."
 readme = "README.md"
 requires-python = ">=3.12"
+# Core web + data + serial stack. Heavy vision/ML deps live in optional extras below so the
+# app boots fast at every milestone; install an extra only when its milestone needs it.
 dependencies = [
-    "flask>=3.1.2",
-    "flask-cors>=6.0.2",
-    "torch>=2.9.1",
-    "opencv-python>=4.8.0",
-    "numpy>=1.24.0",
-    "rich>=14.2.0",
-    "open3d>=0.19.0",
-    "opencv-contrib-python>=4.11.0.86",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.14.0",
+    "sse-starlette>=2.1.0",
+    "python-multipart>=0.0.12",
     "pyserial>=3.5",
+    "numpy>=1.24.0",
+    "pillow>=11.0.0",
+    "rich>=14.2.0",
 ]
+
+[project.optional-dependencies]
+# Reconstruction + camera capture (Milestones 5 & 6).
+vision = [
+    "opencv-python>=4.8.0",
+    "opencv-contrib-python>=4.11.0.86",
+    "open3d>=0.19.0",
+]
+# ML detector/classifier (Milestone 7).
+ml = [
+    "torch>=2.9.1",
+]
+dev = [
+    "pytest>=8.3.0",
+    "httpx>=0.27.0",
+    "ruff>=0.7.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["backend"]

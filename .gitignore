@@ -1,19 +1,38 @@
+# --- Secrets / local env ---
 .env
 
+# --- Python ---
 .venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
 
+# --- Editors ---
 .idea/
+.vscode/*
+!.vscode/extensions.json
 
-backend/api/__pycache__/
-backend/internal/__pycache__/
-backend/embedded/__pycache__/
-melanoma_classifier/*
+# --- Runtime data (private, local-first — never commit) ---
+artifacts/
+data/
+*.db
+*.sqlite
+*.sqlite3
 
+# --- Legacy v1 stray outputs (reference code lives in git history) ---
 images/
 image/
-
 mesh.mtl
 mesh.obj
 uv_map.png
 
-__pycache__/
+# --- ML weights (large binaries) ---
+backend/ml/weights/
+melanoma_classifier/*
+
+
+# --- Claude Session ---
+CLAUDE.md
+memory/
+docs/
